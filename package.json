@@ -1,0 +1,22 @@
+{
+  "name": "custom-school-proxy",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Custom proxy for educational resource access",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "chemicaljs": "^1.6.6",
+    "express": "^4.18.2",
+    "ws": "^8.14.2"
+  },
+  "engines": {
+    "node": ">=18.x"
+  },
+  "keywords": ["proxy", "educational", "bypass"],
+  "author": "",
+  "license": "MIT"
+}
