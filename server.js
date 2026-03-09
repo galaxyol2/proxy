@@ -1,35 +1,25 @@
-// server.js - Your custom proxy with ChatGPT support
+// server.js - Fixed version for Render
 import { ChemicalServer } from "chemicaljs";
 import express from "express";
 import { createServer } from 'http';
-import { WebSocketServer } from 'ws';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 const app = express();
 const server = createServer(app);
-const wss = new WebSocketServer({ noServer: true });
 
-// Chemical proxy configuration
+// Chemical proxy configuration - FIXED
 const chemical = new ChemicalServer({
     default: "uv",
     uv: true,
-    scramjet: true,
-    ws: true,  // Enable WebSocket support
-    transport: "libcurl",  // Better for ChatGPT
-    // Optional: Block known tracking domains
-    hostname_blacklist: [
-        /doubleclick\.net/,
-        /google-analytics\.com/
-    ]
+    scramjet: true
 });
 
-// Serve static files from public directory
+// Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API endpoint for ChatGPT fallback (if needed)
+// API endpoint for ChatGPT fallback
 app.get('/api/chat', express.json(), async (req, res) => {
     const { prompt, apiKey } = req.query;
     
@@ -59,47 +49,23 @@ app.get('/api/chat', express.json(), async (req, res) => {
     }
 });
 
-// Handle WebSocket upgrades for ChatGPT
-server.on('upgrade', (request, socket, head) => {
-    const url = request.url || '';
-    
-    // Check if this is a ChatGPT WebSocket connection
-    if (url.includes('chat.openai.com') || url.includes('wss://') || url.includes('backend-api')) {
-        // Let Chemical handle it with WebSocket support
-        if (chemical.ws?.handleUpgrade) {
-            chemical.ws.handleUpgrade(request, socket, head);
-        } else {
-            socket.destroy();
-        }
-    } else {
-        // Let Chemical handle other WebSocket connections
-        if (chemical.ws?.handleUpgrade) {
-            chemical.ws.handleUpgrade(request, socket, head);
-        } else {
-            socket.destroy();
-        }
+// IMPORTANT FIX: ChemicalJS mounts differently
+app.use((req, res, next) => {
+    // Let Chemical handle proxy requests
+    if (req.url.startsWith('/service/') || req.url.includes('bare')) {
+        return chemical.handleRequest(req, res);
     }
+    next();
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Proxy error:', err);
-    res.status(500).send('Something broke!');
-});
-
-// Start the server
-chemical.use(app);
-chemical.listen(server);
-
+// Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`\n🚀 Your custom proxy is running!`);
+    console.log(`\n🚀 Your custom proxy is running on port ${PORT}`);
     console.log(`📱 Local: http://localhost:${PORT}`);
-    console.log(`🌍 Ready for deployment on Render`);
     console.log(`\n✨ Features enabled:`);
     console.log(`   ✅ Ultraviolet proxy engine`);
     console.log(`   ✅ Scramjet fallback engine`);
-    console.log(`   ✅ WebSocket support for ChatGPT`);
+    console.log(`   ✅ ChatGPT API fallback`);
     console.log(`   ✅ About:Blank cloaking ready`);
-    console.log(`\n📝 Add your Render domain and free ZoneABC domain next!\n`);
 });
